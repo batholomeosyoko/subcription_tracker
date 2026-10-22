@@ -46,3 +46,5 @@ const errorMiddleware = ( req, res, next) => {
     next(errror);
 }
 };
+
+export default errorMiddleware;
