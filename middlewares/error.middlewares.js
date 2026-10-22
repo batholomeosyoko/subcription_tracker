@@ -1,50 +1,40 @@
-const errorMiddleware = ( req, res, next) => {
-    try {
-    let error = {...err};
+const errorMiddleware = (err, req, res, next) => {
+  try {
+    let error = { ...err };
 
-    error.message = error.message;
+    error.message = err.message;
 
     console.error(err);
 
- if (error.name === 'CastError') {
-    const message = 'Resource not found';
-    error = new Error(message);
-    error.code = 404;
- }   
- if (error.code === 11000) {
-    error = new Error('Duplicate key');
-    error.code = 400;
- }
+    // Mongoose bad ObjectId
+    if (err.name === 'CastError') {
+      const message = 'Resource not found';
+      error = new Error(message);
+      error.statusCode = 404;
+    }
 
- //Mongoose validation error
- if (error.name === 'ValidationError') {
-    error = new Error('Invalid data');
-    error.code = 400;
- }
+    // Mongoose duplicate key
+    if (err.code === 11000) {
+      const message = 'Duplicate field value entered';
+      error = new Error(message);
+      error.statusCode = 400;
+    }
 
- // Mongoose CastError for invalid ObjectIds
- if (error.name === 'CastError' && error.kind === 'ObjectId') {
-    error = new Error('Invalid resource ID');
-    error.code = 400;
- }
+    // Mongoose validation error
+    if (err.name === 'ValidationError') {
+      const message = Object.values(err.errors).map((val) => val.message);
+      error = new Error(message.join(', '));
+      error.statusCode = 400;
+    }
 
- // Handle all other validation errors as 400
- if (error.code >= 400 && error.code < 500) {
-    error = new Error(error.message);
-    error.code = 500;
- }
-
- // Handle 500 errors for unhandled server errors
- if (error.code >= 500 || !error.code) {
-    error = new Error('Internal server error');
-    error.code = 500;
- }
-
- res.status(error.code).json({ message: error.message });
-
-} catch(errror) {
-    next(errror);
-}
+    res.status(error.statusCode || 500).json({
+      success: false,
+      error: error.message || 'Server Error',
+      message: error.message || 'Server Error',
+    });
+  } catch (error) {
+    next(error);
+  }
 };
 
 export default errorMiddleware;
