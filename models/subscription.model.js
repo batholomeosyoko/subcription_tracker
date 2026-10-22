@@ -73,14 +73,49 @@ const SubscriptionSchema = new mongoose.Schema(
     startDate: {
       type: Date,
       required: [true, "Subscription start date is required"],
+      validate: {
+        validator: (value) => value <= this.endDate,
+        message: "Subscription start date must be before the end date",
+      },
       trim: true,
     },
 
-    endDate: {
+    renewalDate: {
       type: Date,
-      required: [true, "Subscription end date is required"],
+      required: [true, "Subscription renewal date is required"],
+      validate: {
+        validator: function (value) {
+          return value > this.startDate;
+        },
+        message: "Subscription renewal date must be after the start date",
+      },
       trim: true,
     },
+
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+      index: true
+    },
   },
-  { timestamps: true },
+  { timestamps: true };
+
+  SubscriptionSchema.pre(method: 'save', fn: function (next) {
+    if(!this.renewalDate) {
+      const renewalPeriods = {
+        daily: 1,
+        weekly: 7,
+        monthly: 30,
+        yearly: 365
+      };
+      this.renewalDate = new Date(this.startDate);
+      this.renewalDate.setDate(this.renewalDate.getDate() + renewalPeriods[this.billingCycle]);
+    }
+    if (this.renewalDate < new Date()) {
+      this.status = 'expired';
+    } 
+    next();
+
+  }
 );
