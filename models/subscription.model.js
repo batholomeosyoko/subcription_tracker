@@ -99,9 +99,10 @@ const SubscriptionSchema = new mongoose.Schema(
       index: true
     },
   },
-  { timestamps: true };
+  { timestamps: true }
+);
 
-  SubscriptionSchema.pre(method: 'save', fn: function (next) {
+SubscriptionSchema.pre('save', function (next) {
     if(!this.renewalDate) {
       const renewalPeriods = {
         daily: 1,
